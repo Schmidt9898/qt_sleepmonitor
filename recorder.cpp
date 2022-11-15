@@ -54,7 +54,7 @@ int PrintDeviceInfo(INodeMap& nodeMap)
     return result;
 }
 
-int ConfigureCamera(INodeMap& nodeMap, INodeMap& nodeMapTLDevice)
+int ConfigureCamera(INodeMap& nodeMap)
 {
     int result = 0;
 
@@ -95,7 +95,7 @@ int ConfigureCamera(INodeMap& nodeMap, INodeMap& nodeMapTLDevice)
 }
 
 
-int AcquireImages(CameraPtr pCam, INodeMap& nodeMap, int recordLength, int part)
+int AcquireImages(CameraPtr pCam, int recordLength, int part, QProgressBar *progressBar)
 {
     int result = 0;
 
@@ -173,17 +173,20 @@ int AcquireImages(CameraPtr pCam, INodeMap& nodeMap, int recordLength, int part)
                               << "s" << "\n";
 
                     // progressbar just for a nicer look
-                    int barWidth = 100;
-                    float progress = static_cast<float>(imageCnt) / numImages;
+                    //int barWidth = 100;
+                    //float progress = static_cast<float>(imageCnt) / numImages;
 
-                    std::cout << "[";
-                    int pos = barWidth * progress;
-                    for (int i = 0; i < barWidth; ++i) {
-                        if (i <= pos) std::cout << "#";
-                        //else if (i == pos) std::cout << ">";
-                        else std::cout << " ";
-                    }
-                    std::cout << "] " << int(progress * 100.0) << " %\n";
+                    //std::cout << "[";
+                    //int pos = barWidth * progress;
+                    //for (int i = 0; i < barWidth; ++i) {
+                    //    if (i <= pos) std::cout << "#";
+                    //    //else if (i == pos) std::cout << ">";
+                    //    else std::cout << " ";
+                    //}
+                    //std::cout << "] " << int(progress * 100.0) << " %\n";
+
+                    int processPercent = imageCnt*100/numImages;
+                    progressBar->setValue(processPercent);
 
                     cout << "------------------------" << "\n";
                 }
@@ -235,20 +238,13 @@ int RecordTimeInput()
     return 0;
 }
 
-int RunSingleCamera(CameraPtr pCam)
+int RunSingleCamera(CameraPtr pCam, int secondsToRecord, int partsToRecord, QProgressBar* progressBar)
 {
     int result = 0;
     int err = 0;
 
     try
     {
-        int secondsToRecord = 60;
-        //cout << "Recording time (examples: 2h or 15m or 60s): ";
-        //int secondsToRecord = RecordTimeInput();
-        //cout << "\n" << "Number of video files: ";
-        int partsToRecord = 1;
-        //cin >> partsToRecord;
-
         for (int part = 1; part <= partsToRecord; part++)
         {
             // Retrieve TL device nodemap and print device information
@@ -262,9 +258,9 @@ int RunSingleCamera(CameraPtr pCam)
             INodeMap& nodeMap = pCam->GetNodeMap();
 
             // Configure camera settings (fps, acquisition mode, etc.)
-            result = result | ConfigureCamera(nodeMap, nodeMapTLDevice);
+            result = result | ConfigureCamera(nodeMap);
 
-            err = AcquireImages(pCam, nodeMap, secondsToRecord, part);
+            err = AcquireImages(pCam, secondsToRecord, part, progressBar);
             if (err < 0)
             {
                 return err;
@@ -285,7 +281,7 @@ int RunSingleCamera(CameraPtr pCam)
 
 CameraPtr GetCamera()
 {
-    int result = 0;
+    //int result = 0;
 
     cv::utils::logging::setLogLevel(cv::utils::logging::LogLevel::LOG_LEVEL_SILENT);
 

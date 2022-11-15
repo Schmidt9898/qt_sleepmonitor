@@ -13,6 +13,8 @@
 #include <sstream>
 #include <string>
 #include <chrono>
+#include "waitwindow.h"
+#include "qprogressbar.h"
 
 using namespace Spinnaker;
 using namespace Spinnaker::GenApi;
@@ -20,9 +22,9 @@ using namespace Spinnaker::GenICam;
 using namespace Spinnaker::Video;
 
 int PrintDeviceInfo(INodeMap& nodeMap);
-int ConfigureCamera(INodeMap& nodeMap, INodeMap& nodeMapTLDevice);
-int AcquireImages(CameraPtr pCam, INodeMap& nodeMap, int recordLength, int part);
+int ConfigureCamera(INodeMap& nodeMap);
+int AcquireImages(CameraPtr pCam, int recordLength, int part, QProgressBar* progressBar);
 int RecordTimeInput();
-int RunSingleCamera(CameraPtr pCam);
+int RunSingleCamera(CameraPtr pCam, int secondsToRecord, int partsToRecord, QProgressBar* progressBar);
 
 CameraPtr GetCamera();

@@ -9,16 +9,25 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    failwindow.cpp \
     main.cpp \
     recorder.cpp \
-    sleepmonitormain.cpp
+    sleepmonitormain.cpp \
+    succeswindow.cpp \
+    waitwindow.cpp
 
 HEADERS += \
+    failwindow.h \
     recorder.h \
-    sleepmonitormain.h
+    sleepmonitormain.h \
+    succeswindow.h \
+    waitwindow.h
 
 FORMS += \
-    sleepmonitormain.ui
+    failwindow.ui \
+    sleepmonitormain.ui \
+    succeswindow.ui \
+    waitwindow.ui
 	
 INCLUDEPATH += C:\opencv\build\include
 INCLUDEPATH += C:\Users\99gab\Desktop\SZTAKI\include

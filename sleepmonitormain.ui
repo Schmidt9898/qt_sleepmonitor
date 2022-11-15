@@ -23,7 +23,7 @@
    <string>SleepMonitorMain</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QGraphicsView" name="graphicsView">
+   <widget class="QGraphicsView" name="previewWindow">
     <property name="geometry">
      <rect>
       <x>10</x>
@@ -40,7 +40,7 @@
     <property name="geometry">
      <rect>
       <x>670</x>
-      <y>230</y>
+      <y>240</y>
       <width>141</width>
       <height>29</height>
      </rect>
@@ -50,16 +50,19 @@
     </property>
    </widget>
    <widget class="QPushButton" name="stopRecordingButton">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
     <property name="geometry">
      <rect>
       <x>840</x>
-      <y>230</y>
+      <y>240</y>
       <width>141</width>
       <height>29</height>
      </rect>
     </property>
     <property name="text">
-     <string>Stop Recording</string>
+     <string>stopbutton @later</string>
     </property>
    </widget>
    <widget class="QPushButton" name="showPreviewButton">
@@ -88,7 +91,7 @@
      <string>Hide Preview</string>
     </property>
    </widget>
-   <widget class="QSlider" name="horizontalSlider">
+   <widget class="QSlider" name="offsetSlider">
     <property name="geometry">
      <rect>
       <x>670</x>
@@ -101,7 +104,7 @@
      <enum>Qt::Horizontal</enum>
     </property>
    </widget>
-   <widget class="QLabel" name="label_2">
+   <widget class="QLabel" name="offsetLabel">
     <property name="geometry">
      <rect>
       <x>730</x>
@@ -122,7 +125,7 @@
      <set>Qt::AlignCenter</set>
     </property>
    </widget>
-   <widget class="QSlider" name="horizontalSlider_2">
+   <widget class="QSlider" name="multiplySlider">
     <property name="geometry">
      <rect>
       <x>670</x>
@@ -135,7 +138,7 @@
      <enum>Qt::Horizontal</enum>
     </property>
    </widget>
-   <widget class="QLabel" name="label_3">
+   <widget class="QLabel" name="multiplyLabel">
     <property name="geometry">
      <rect>
       <x>720</x>
@@ -159,17 +162,28 @@
      <set>Qt::AlignCenter</set>
     </property>
    </widget>
-   <widget class="QProgressBar" name="progressBar">
+   <widget class="QProgressBar" name="recordingProgressBar">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
     <property name="geometry">
      <rect>
       <x>670</x>
-      <y>270</y>
+      <y>280</y>
       <width>311</width>
       <height>23</height>
      </rect>
     </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
     <property name="value">
      <number>0</number>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
     </property>
     <property name="format">
      <string>%p%</string>
@@ -179,43 +193,66 @@
     <property name="geometry">
      <rect>
       <x>800</x>
-      <y>160</y>
+      <y>120</y>
       <width>48</width>
-      <height>29</height>
+      <height>30</height>
      </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
     </property>
    </widget>
    <widget class="QSpinBox" name="recordTimeMin">
     <property name="geometry">
      <rect>
       <x>890</x>
-      <y>160</y>
+      <y>120</y>
       <width>48</width>
-      <height>29</height>
+      <height>30</height>
      </rect>
     </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="maximum">
+     <number>60</number>
+    </property>
    </widget>
-   <widget class="QLabel" name="label">
+   <widget class="QLabel" name="hourLabel">
     <property name="geometry">
      <rect>
       <x>850</x>
-      <y>160</y>
-      <width>21</width>
-      <height>31</height>
+      <y>120</y>
+      <width>20</width>
+      <height>30</height>
      </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
     </property>
     <property name="text">
      <string>h</string>
     </property>
    </widget>
-   <widget class="QLabel" name="label_4">
+   <widget class="QLabel" name="minuteLabel">
     <property name="geometry">
      <rect>
       <x>940</x>
-      <y>160</y>
-      <width>21</width>
-      <height>31</height>
+      <y>120</y>
+      <width>20</width>
+      <height>30</height>
      </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
     </property>
     <property name="text">
      <string>m</string>
@@ -234,13 +271,13 @@
      <string>Connect</string>
     </property>
    </widget>
-   <widget class="QLabel" name="recordtime_label">
+   <widget class="QLabel" name="recordTimeLabel">
     <property name="geometry">
      <rect>
       <x>670</x>
-      <y>160</y>
+      <y>120</y>
       <width>120</width>
-      <height>23</height>
+      <height>30</height>
      </rect>
     </property>
     <property name="font">
@@ -250,6 +287,91 @@
     </property>
     <property name="text">
      <string>Recording time:</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="partsLabel">
+    <property name="geometry">
+     <rect>
+      <x>670</x>
+      <y>160</y>
+      <width>120</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Number of files:</string>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="recordParts">
+    <property name="geometry">
+     <rect>
+      <x>800</x>
+      <y>160</y>
+      <width>48</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="minimum">
+     <number>1</number>
+    </property>
+    <property name="value">
+     <number>1</number>
+    </property>
+   </widget>
+   <widget class="QLabel" name="setRecordTimeLabel">
+    <property name="geometry">
+     <rect>
+      <x>670</x>
+      <y>200</y>
+      <width>150</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Set recording time:</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="timeValueLabel">
+    <property name="geometry">
+     <rect>
+      <x>830</x>
+      <y>200</y>
+      <width>80</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+      <kerning>true</kerning>
+     </font>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::WinPanel</enum>
+    </property>
+    <property name="frameShadow">
+     <enum>QFrame::Sunken</enum>
+    </property>
+    <property name="text">
+     <string>0h 0m</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
     </property>
    </widget>
   </widget>
