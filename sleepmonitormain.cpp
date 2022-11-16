@@ -1,13 +1,6 @@
 #include "sleepmonitormain.h"
 #include "ui_sleepmonitormain.h"
 
-#include "waitwindow.h"
-#include "succeswindow.h"
-#include "failwindow.h"
-
-#include <thread>
-#include <QProgressDialog>
-
 using namespace cv;
 
 SleepMonitorMain::SleepMonitorMain(QWidget *parent)
@@ -17,6 +10,9 @@ SleepMonitorMain::SleepMonitorMain(QWidget *parent)
 
     ui->setupUi(this);
     ui->recordingProgressBar->hide();
+
+    connectThread = new ConnectThread(this);
+    connect(connectThread, SIGNAL(ConnectionFinished()), this, SLOT(onConnectionFinished()));
 }
 
 SleepMonitorMain::~SleepMonitorMain()
@@ -35,10 +31,12 @@ void SleepMonitorMain::on_startRecordingButton_clicked()
     //ui->startRecordingButton->setEnabled(false);
     //recordingThread = std::thread(RunSingleCamera(camPtr, (recordHour * 60 + recordMinute) * 60, recordParts));
     //RunSingleCamera(camPtr, (recordHour * 60 + recordMinute) * 60, recordParts);
+    //ui->startRecordingButton->setEnabled(false);
+    //RunSingleCamera(camPtr, (recordHour * 60 + recordMinute) * 60, recordParts, ui->recordingProgressBar);
+    //ui->recordingProgressBar->show();
 
     ui->startRecordingButton->setEnabled(false);
-    RunSingleCamera(camPtr, (recordHour * 60 + recordMinute) * 60, recordParts, ui->recordingProgressBar);
-    ui->recordingProgressBar->show();
+    connectThread->start(SleepMonitorMain::recordMinute, SleepMonitorMain::recordParts);
 }
 
 
@@ -79,20 +77,22 @@ void SleepMonitorMain::on_connectButton_clicked()
 
     WaitWindow waitwin(this);
     waitwin.show();
+
     ui->startRecordingButton->setEnabled(false);
 
-    Spinnaker::CameraPtr camPtr = GetCamera();
-    std::cout << int(camPtr) << "\n";
+    CameraPtr pCam = CameraClass::GetCamera();
+    std::cout<< "returned\n";
+
+    std::cout << int(CameraClass::getCamPtr()) << "\n";
 
     waitwin.close();
 
-    if (camPtr)
+    if (CameraClass::getCamPtr())
     {
         isConnected = true;
         SuccesWindow resultwin;
         resultwin.exec();
         if(!isTimeNull) ui->startRecordingButton->setEnabled(true);
-
     }
     else
     {
@@ -112,3 +112,7 @@ void SleepMonitorMain::on_recordParts_valueChanged(int arg1)
     SleepMonitorMain::UpdateDisplayedRecordTime((recordMinute + recordHour * 60) * recordParts);
 }
 
+void SleepMonitorMain::onConnectionFinished()
+{
+    std::cout << "asd" << CameraClass::getCamPtr();
+}

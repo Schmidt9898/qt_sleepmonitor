@@ -30,6 +30,53 @@ int main(int argc, char *argv[])
     freopen("CON", "r", stdin);
 #endif
 
+    ///cv::utils::logging::setLogLevel(cv::utils::logging::LogLevel::LOG_LEVEL_SILENT);
+
+    ///// Retrieve singleton reference to system object
+    ///SystemPtr system = System::GetInstance();
+
+    ///// Retrieve list of cameras from the system
+    ///CameraList camList = system->GetCameras();
+
+    ///unsigned int numCameras = camList.GetSize();
+
+    ///std::cout << "Number of cameras detected: " << numCameras << "\n" << "\n";
+
+    ///// Finish if there are no cameras
+    ///if (numCameras == 0)
+    ///{
+    ///    // Clear camera list before releasing system
+    ///    camList.Clear();
+
+    ///    // Release system
+    ///    //system->ReleaseInstance();
+
+    ///    std::cout << "Camera not connected!" << "\n";
+
+    ///    CameraPtr camPtr = NULL;
+    ///    return 0;
+    ///}
+
+    ///std::cout << "\n" << "Camera detected. Returning pointer..." << "..." << "\n";
+
+    ///// Clear camera list before releasing system
+    ///camList.Clear();
+    ///// Release system
+    /////system->ReleaseInstance();
+
+    ///// Run example on each camera
+    ///for (unsigned int i = 0; i < numCameras; i++)
+    ///{
+    ///    std::cout << "\n" << "Running example for camera " << i << "..." << "\n";
+
+    ///    camList.GetByIndex(i);
+
+    ///    std::cout << "Camera " << i << " example complete..." << "\n" << "\n";
+    ///}
+    ///CameraPtr camPtr = camList.GetByIndex(0);
+
+    ///return 1;
+
     QApplication a(argc, argv);
     SleepMonitorMain w;
     w.show();

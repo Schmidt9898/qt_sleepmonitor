@@ -4,7 +4,14 @@
 #include <thread>
 #include <QMainWindow>
 
-#include "recorder.h"
+#include "cameraclass.h"
+#include "waitwindow.h"
+#include "succeswindow.h"
+#include "failwindow.h"
+#include "connectthread.h"
+
+#include <thread>
+#include <QProgressDialog>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class SleepMonitorMain; }
@@ -15,18 +22,21 @@ class SleepMonitorMain : public QMainWindow
     Q_OBJECT
 
 public:
+    /* Functions */
     SleepMonitorMain(QWidget *parent = nullptr);
     ~SleepMonitorMain();
 
-    std::thread recordingThread;
+    //std::thread recordingThread;
 
+    /* Variables */
     bool isConnected = false;
     bool isTimeNull = true;
     int recordMinute = 0;
     int recordHour = 0;
     int recordParts = 1;
     int recordTime = 0;
-    Spinnaker::CameraPtr camPtr = NULL;
+
+    ConnectThread *connectThread;
 
 private slots:
     void on_startRecordingButton_clicked();
@@ -38,6 +48,9 @@ private slots:
     void on_connectButton_clicked();
 
     void on_recordParts_valueChanged(int arg1);
+
+public slots:
+    void onConnectionFinished();
 
 private:
     Ui::SleepMonitorMain *ui;

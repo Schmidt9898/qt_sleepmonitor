@@ -94,7 +94,6 @@ int ConfigureCamera(INodeMap& nodeMap)
     return result;
 }
 
-
 int AcquireImages(CameraPtr pCam, int recordLength, int part, QProgressBar *progressBar)
 {
     int result = 0;
