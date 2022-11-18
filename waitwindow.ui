@@ -10,6 +10,11 @@
     <height>100</height>
    </rect>
   </property>
+  <property name="font">
+   <font>
+    <family>Arial</family>
+   </font>
+  </property>
   <property name="windowTitle">
    <string>Please wait</string>
   </property>
@@ -24,6 +29,7 @@
    </property>
    <property name="font">
     <font>
+     <family>Arial</family>
      <pointsize>12</pointsize>
      <bold>true</bold>
     </font>

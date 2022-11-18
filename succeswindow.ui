@@ -22,6 +22,11 @@
      <height>29</height>
     </rect>
    </property>
+   <property name="font">
+    <font>
+     <family>Arial</family>
+    </font>
+   </property>
    <property name="text">
     <string>OK</string>
    </property>
@@ -37,6 +42,7 @@
    </property>
    <property name="font">
     <font>
+     <family>Arial</family>
      <pointsize>12</pointsize>
      <bold>false</bold>
     </font>

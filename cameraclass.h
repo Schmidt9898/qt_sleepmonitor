@@ -16,7 +16,7 @@
 #include <sstream>
 #include <string>
 #include <chrono>
-#include "qprogressbar.h"
+#include <QProgressBar>
 
 using namespace Spinnaker;
 using namespace Spinnaker::GenApi;
@@ -31,20 +31,17 @@ public:
     CameraClass();
     ~CameraClass();
 
-    static void RunCamera(int recordLength, int numParts);
-    static CameraPtr GetCamera();
-    static CameraPtr getCamPtr() { return camPtr; }
-
     /* Functions */
-    //static void PrintDeviceInfo(INodeMap& nodeMap);
-    static void ConfigureCamera(INodeMap& nodeMap);
-    static void StartRecording(int recordLength, int numParts);
-    static void InitCamera();
+    int ConfigureCamera(INodeMap& nodeMap);
+    void StartRecording(int recordLength, int numParts);
+    int InitCamera();
+    int GetCamera();
 
     /* Variables */
-    static CameraPtr camPtr;
-    //static INodeMap& nodeMapTLDevice;
-    //static INodeMap& nodeMap;
+    CameraPtr camPtr;
+    SystemPtr system;
+    CameraList camList;
+
 
 private:
 

@@ -1,24 +1,25 @@
 #include "sleepmonitormain.h"
 #include "ui_sleepmonitormain.h"
 
+#include "waitwindow.h"
+#include "succeswindow.h"
+#include "failwindow.h"
+
 using namespace cv;
 
-SleepMonitorMain::SleepMonitorMain(QWidget *parent)
-    : QMainWindow(parent)
-    , ui(new Ui::SleepMonitorMain)
+SleepMonitorMain::SleepMonitorMain(QWidget *parent, CameraClass *cam)
+    : QMainWindow(parent), camera(cam), ui(new Ui::SleepMonitorMain)
 {
-
     ui->setupUi(this);
-    ui->recordingProgressBar->hide();
-
-    connectThread = new ConnectThread(this);
-    connect(connectThread, SIGNAL(ConnectionFinished()), this, SLOT(onConnectionFinished()));
+    //ui->recordingProgressBar->hide();
 }
 
 SleepMonitorMain::~SleepMonitorMain()
 {
+    //camera->~CameraClass();
     delete ui;
 }
+
 
 void SleepMonitorMain::UpdateDisplayedRecordTime(int recordTime)
 {
@@ -28,15 +29,12 @@ void SleepMonitorMain::UpdateDisplayedRecordTime(int recordTime)
 
 void SleepMonitorMain::on_startRecordingButton_clicked()
 {
-    //ui->startRecordingButton->setEnabled(false);
-    //recordingThread = std::thread(RunSingleCamera(camPtr, (recordHour * 60 + recordMinute) * 60, recordParts));
-    //RunSingleCamera(camPtr, (recordHour * 60 + recordMinute) * 60, recordParts);
-    //ui->startRecordingButton->setEnabled(false);
-    //RunSingleCamera(camPtr, (recordHour * 60 + recordMinute) * 60, recordParts, ui->recordingProgressBar);
-    //ui->recordingProgressBar->show();
-
     ui->startRecordingButton->setEnabled(false);
-    connectThread->start(SleepMonitorMain::recordMinute, SleepMonitorMain::recordParts);
+    WaitWindow waitwin;
+    waitwin.show();
+    camera->StartRecording(recordHour*60 + recordMinute, recordParts);
+    waitwin.hide();
+    ui->startRecordingButton->setEnabled(true);
 }
 
 
@@ -67,52 +65,52 @@ void SleepMonitorMain::on_recordTimeHour_valueChanged(int arg1)
 }
 
 
-void SleepMonitorMain::on_connectButton_clicked()
-{
-    //cameraThread = std::thread(startCamera);
-    //std::this_thread::sleep_for(std::chrono::milliseconds(10));
-
-    //std::thread *th = new std::thread(GetCamera);
-    //th->join();
-
-    WaitWindow waitwin(this);
-    waitwin.show();
-
-    ui->startRecordingButton->setEnabled(false);
-
-    CameraPtr pCam = CameraClass::GetCamera();
-    std::cout<< "returned\n";
-
-    std::cout << int(CameraClass::getCamPtr()) << "\n";
-
-    waitwin.close();
-
-    if (CameraClass::getCamPtr())
-    {
-        isConnected = true;
-        SuccesWindow resultwin;
-        resultwin.exec();
-        if(!isTimeNull) ui->startRecordingButton->setEnabled(true);
-    }
-    else
-    {
-        isConnected = false;
-        FailWindow resultwin;
-        resultwin.exec();
-        ui->startRecordingButton->setEnabled(false);
-    }
-
-
-}
-
-
 void SleepMonitorMain::on_recordParts_valueChanged(int arg1)
 {
     recordParts = arg1;
     SleepMonitorMain::UpdateDisplayedRecordTime((recordMinute + recordHour * 60) * recordParts);
 }
 
+
+void SleepMonitorMain::on_connectButton_clicked()
+{
+    //cameraThread = std::thread(startCamera);
+    //std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                                                                // one of this will be useful someday
+    //std::thread *th = new std::thread(GetCamera);
+    //th->join();
+
+    WaitWindow waitwin(this);
+    ui->startRecordingButton->setEnabled(false);
+
+    waitwin.show();
+    int retval = camera->GetCamera();
+    waitwin.close();
+
+    std::cout << "returned value: " << retval << "\n";
+
+    if (retval == 0)
+    {
+        isConnected = true;
+        SuccesWindow resultwin;
+        resultwin.exec();
+        if(!isTimeNull) ui->startRecordingButton->setEnabled(true);
+        ui->connectButton->setText("Connected");
+        ui->connectButton->setEnabled(false);
+        ui->connectButton->setFont(QFont("Arial", 12));
+        ui->connectButton->setStyleSheet("color: green; font: bold");
+    }
+    else
+    {
+        isConnected = false;
+        FailWindow resultwin;
+        resultwin.exec();
+        ui->connectButton->setStyleSheet("color: red; font: bold");
+        ui->connectButton->setText("Could not connect\nPress to try again");
+    }
+}
+
 void SleepMonitorMain::onConnectionFinished()
 {
-    std::cout << "asd" << CameraClass::getCamPtr();
+    std::cout << "signal received";
 }

@@ -5,10 +5,7 @@
 #include <QMainWindow>
 
 #include "cameraclass.h"
-#include "waitwindow.h"
-#include "succeswindow.h"
-#include "failwindow.h"
-#include "connectthread.h"
+
 
 #include <thread>
 #include <QProgressDialog>
@@ -23,10 +20,8 @@ class SleepMonitorMain : public QMainWindow
 
 public:
     /* Functions */
-    SleepMonitorMain(QWidget *parent = nullptr);
+    SleepMonitorMain(QWidget *parent = nullptr, CameraClass *cam = nullptr);
     ~SleepMonitorMain();
-
-    //std::thread recordingThread;
 
     /* Variables */
     bool isConnected = false;
@@ -36,17 +31,13 @@ public:
     int recordParts = 1;
     int recordTime = 0;
 
-    ConnectThread *connectThread;
+    CameraClass *camera;
 
 private slots:
     void on_startRecordingButton_clicked();
-
     void on_recordTimeMin_valueChanged(int arg1);
-
     void on_recordTimeHour_valueChanged(int arg1);
-
     void on_connectButton_clicked();
-
     void on_recordParts_valueChanged(int arg1);
 
 public slots:

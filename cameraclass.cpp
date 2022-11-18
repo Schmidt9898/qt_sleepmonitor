@@ -5,104 +5,91 @@ CameraClass::CameraClass()
 
 }
 
-Spinnaker::CameraPtr CameraClass::camPtr = NULL;
-
-CameraPtr CameraClass::GetCamera()
+CameraClass::~CameraClass()
 {
-    cv::utils::logging::setLogLevel(cv::utils::logging::LogLevel::LOG_LEVEL_SILENT);
+    camPtr->DeInit();
+    camList.Clear();
+    system->ReleaseInstance();
+    //delete this;
+}
+
+int CameraClass::GetCamera()
+{
+    int result = 0;
     try
     {
         // Retrieve singleton reference to system object
-        SystemPtr system = System::GetInstance();
+        system = System::GetInstance();
 
         // Retrieve list of cameras from the system
-        CameraList camList = system->GetCameras();
-
+        camList = system->GetCameras();
         unsigned int numCameras = camList.GetSize();
 
-        std::cout << "Number of cameras detected: " << numCameras << "\n" << "\n";
-        CameraPtr pCam = NULL;
+        std::cout << "Number of cameras detected: " << numCameras << "\n\n";
+
         // Finish if there are no cameras
         if (numCameras == 0)
         {
-            // Clear camera list before releasing system
-            camList.Clear();
-
-            // Release system
-            system->ReleaseInstance();
-
             std::cout << "Camera not connected!" << "\n";
-
-            CameraClass::camPtr = NULL;
-
+            return 1;
         }
-        else
-        {
-            CameraClass::camPtr = camList.GetByIndex(0);
 
-            std::cout << "\n" << "Camera detected. Returning pointer..."  << "\n";
+        std::cout << "Camera detected. Returning pointer..." << "\n";
 
-            CameraClass::InitCamera();                              //<
-            //CameraClass::ConfigureCamera(CameraClass::nodeMap);    //<This order is important
-            CameraClass::StartRecording(10, 1);    //<
+        camPtr = camList.GetByIndex(0);
+        result = result | InitCamera();
 
-            // Clear camera list before releasing system
-            std::cout << "clearing list\n";
-            camList.Clear();
-            //Release system
-            std::cout << "releasing system instance\n";
-            system->ReleaseInstance();
-            std::cout << "returning\n";
-        }
-        return pCam;
+        //      NOT SURE IF NEEDED, need more testing
+        // Clear camera list before releasing system
+        //std::cout << "clearing list\n";
+        //camList.Clear();
+
+        std::cout << "returning\n";
+        return result;
     }
-    catch(std::exception &e)
+    catch(Spinnaker::Exception& e)
     {
-        std::cerr << e.what() << std::endl;
-        return false;
+        std::cout << "Error:" << e.what() << "\n";
+        return -1;
     }
 }
 
-void CameraClass::RunCamera(int recordLength, int numParts)
+int CameraClass::InitCamera()
 {
-    CameraClass::InitCamera();                              //<
-    //CameraClass::ConfigureCamera(CameraClass::nodeMap);    //<This order is important
-    CameraClass::StartRecording(recordLength, numParts);    //<
-}
-
-void CameraClass::InitCamera()
-{
+    int result = 0;
     std::cout << "Camera init started\n";
     try
     {
-        // Retrieve TL device nodemap and print device information
-        //CameraClass::nodeMapTLDevice = &CameraClass::camPtr->GetTLDeviceNodeMap();
-        //CameraClass::PrintDeviceInfo(CameraClass::nodeMapTLDevice);
+        camPtr->Init();
 
-        // Retrieve GenICam nodemap
-        //CameraClass::nodeMap = CameraClass::camPtr->GetNodeMap();
-        static INodeMap& nodeMap = CameraClass::camPtr->GetNodeMap();
+        INodeMap& nodeMap = camPtr->GetNodeMap();
 
         // Configure camera settings (fps, acquisition mode, etc.)
-        CameraClass::ConfigureCamera(nodeMap);
+        //result = result | ConfigureCamera(nodeMap);
+        ConfigureCamera(nodeMap);
+
+        //camPtr->DeInit();
+
+        std::cout << "Camera init ended\n";
+
+        return result;
     }
     catch (Spinnaker::Exception& e)
     {
-        std::cout << "Error: " << e.what() << "\n";
+        std::cout << "Error at initializing: " << e.what() << "\n";
+        return -1;
     }
-    std::cout << "Camera init ended\n";
-    return;
+
 }
 
 void CameraClass::StartRecording(int recordLength, int numParts)
 {
-    std::cout << "\n" << "\n" << "\t*** IMAGE ACQUISITION ***" << "\n";
     std::cout << "Recording started\n";
     try
     {
         for (int curPart = 1; curPart <= numParts; curPart++)
         {
-        CameraClass::camPtr->Init();
+        if (!camPtr->IsInitialized()) camPtr->Init();
 
         // Calculate required number of frames for 1 video file
         const int numImages = (FRAMERATE * recordLength) + 24;
@@ -137,75 +124,78 @@ void CameraClass::StartRecording(int recordLength, int numParts)
         // The first 24 frames in the MP4 file won't be buffered
         for (int imageCnt = 1; imageCnt <= numImages; imageCnt++)
         {
-                try
+            try
+            {
+
+                // Retrieve the next received image
+                ImagePtr pResultImage = CameraClass::camPtr->GetNextImage(1000);
+
+                if (pResultImage->IsIncomplete())
                 {
-
-                    // Retrieve the next received image
-                    ImagePtr pResultImage = CameraClass::camPtr->GetNextImage(1000);
-
-                    if (pResultImage->IsIncomplete())
-                    {
-                        //SetConsoleTextAttribute(hConsole, 12);
-                        std::cout << "Image "<< imageCnt << " is incomplete with image status " << pResultImage->GetImageStatus() << "..." << "\n"
-                            << "\n";
-                    }
-                    else
-                    {
-                        //SetConsoleTextAttribute(hConsole, 10);
-
-                        std::cout << "------------------------" << "\n";
-                        std::cout << "Grabbed image " << imageCnt << "/" << numImages << "\n";
-
-                        cv::Mat cvimg = cv::Mat(480, 640, CV_16UC1, pResultImage->GetData(), pResultImage->GetStride());
-
-                        cvimg = cvimg - 23800;
-                        cvimg = cvimg * 50;
-
-                        // Deep copy image into mp4 file
-                        video.Append(processor.Convert(pResultImage, PixelFormat_Mono8));
-                        std::cout << "Appended image " << imageCnt << "/" << numImages << " to part:" << curPart << "\n";
-
-                        // Release image
-                        pResultImage->Release();
-
-                        elapsed = std::chrono::steady_clock::now();
-                        std::cout << "Recording time elapsed: "
-                                  << std::chrono::duration_cast<std::chrono::seconds>(elapsed - begin).count()
-                                  << "s" << "\n";
-
-                        //int processPercent = imageCnt*100/numImages;
-                        //progressBar->setValue(processPercent);
-
-                        std::cout << "------------------------" << "\n";
-                    }
+                    //SetConsoleTextAttribute(hConsole, 12);
+                    std::cout << "Image "<< imageCnt << " is incomplete with image status " << pResultImage->GetImageStatus() << "..." << "\n"
+                        << "\n";
                 }
-
-                catch (Spinnaker::Exception& e)
+                else
                 {
-                    std::cout << "Error: " << e.what() << "\n";
+                    //SetConsoleTextAttribute(hConsole, 10);
+
+                    std::cout << "------------------------" << "\n";
+                    std::cout << "Grabbed image " << imageCnt << "/" << numImages << "\n";
+
+                    cv::Mat cvimg = cv::Mat(480, 640, CV_16UC1, pResultImage->GetData(), pResultImage->GetStride());
+
+                    cvimg = cvimg - 23800;
+                    cvimg = cvimg * 50;
+
+                    // Deep copy image into mp4 file
+                    video.Append(processor.Convert(pResultImage, PixelFormat_Mono8));
+                    std::cout << "Appended image " << imageCnt << "/" << numImages << " to part:" << curPart << "\n";
+
+                    // Release image
+                    pResultImage->Release();
+
+                    elapsed = std::chrono::steady_clock::now();
+                    std::cout << "Recording time elapsed: "
+                              << std::chrono::duration_cast<std::chrono::seconds>(elapsed - begin).count()
+                              << "s" << "\n";
+
+                    //int processPercent = imageCnt*100/numImages;
+                    //progressBar->setValue(processPercent);
+
+                    std::cout << "------------------------" << "\n";
                 }
             }
-            video.Close();
 
-            //const char* avi_filename = videoFilename.c_str() + '.avi';
-            //const char* mp4_filename = videoFilename.c_str() + '.mp4';
-            //rename(avi_filename, mp4_filename);
-            std::cout << "\n" << "Video saved at " << videoFilename << ".avi" << "\n";
-
-            // End acquisition
-            CameraClass::camPtr->EndAcquisition();
-            CameraClass::camPtr->DeInit();
+            catch (Spinnaker::Exception& e)
+            {
+                std::cout << "Error: " << e.what() << "\n";
+            }
         }
+        video.Close();
+
+        //const char* avi_filename = videoFilename.c_str() + '.avi';
+        //const char* mp4_filename = videoFilename.c_str() + '.mp4';
+        //rename(avi_filename, mp4_filename);
+
+        std::cout << "\n" << "Video saved at " << videoFilename << ".avi" << "\n";
+
+        // End acquisition
+        CameraClass::camPtr->EndAcquisition();
+        CameraClass::camPtr->DeInit();
+        }
+
+    std::cout << "Recording ended\n";
+    return;
     }
     catch (Spinnaker::Exception& e)
     {
-        std::cout << "Error: " << e.what() << "\n";
+        std::cout << "Error at recording: " << e.what() << "\n";
     }
-    std::cout << "Recording ended\n";
-    return;
+
 }
 
-void CameraClass::ConfigureCamera(INodeMap& nodeMap)
+int CameraClass::ConfigureCamera(INodeMap& nodeMap)
 {
     std::cout << "Camera config started\n";
     try
@@ -216,7 +206,7 @@ void CameraClass::ConfigureCamera(INodeMap& nodeMap)
         if (!IsAvailable(ptrAcquisitionMode) || !IsWritable(ptrAcquisitionMode))
         {
             std::cout << "Unable to set acquisition mode to continuous (node retrieval). Aborting..." << "\n" << "\n";
-            return;
+            return 1;
         }
 
         CEnumEntryPtr ptrAcquisitionModeContinuous = ptrAcquisitionMode->GetEntryByName("Continuous");
@@ -224,7 +214,7 @@ void CameraClass::ConfigureCamera(INodeMap& nodeMap)
         {
             std::cout << "Unable to set acquisition mode to continuous (entry 'continuous' retrieval). Aborting..." << "\n"
                 << "\n";
-            return;
+            return 1;
         }
 
         int64_t acquisitionModeContinuous = ptrAcquisitionModeContinuous->GetValue();
@@ -233,14 +223,17 @@ void CameraClass::ConfigureCamera(INodeMap& nodeMap)
 
         CFloatPtr ptrFramerate = nodeMap.GetNode("AcquisitionFrameRate");
         ptrFramerate->SetValue(FRAMERATE);
-        std::cout << "----- Acquisition framerate set to 10... -----" << "\n";
+        std::cout << "----- Acquisition framerate set to 10 fps -----" << "\n";
+
+        std::cout << "Camera config ended\n";
+        return 0;
     }
     catch (Spinnaker::Exception& e)
     {
-        std::cout << "Error: " << e.what() << "\n";
+        std::cout << "Error at configuration: " << e.what() << "\n";
+        return -1;
     }
-    std::cout << "Camera config ended\n";
-    return;
+
 }
 
-//void PrintDeviceInfo(INodeMap& nodeMap);
+//void PrintDeviceInfo(INodeMap& nodeMap){}

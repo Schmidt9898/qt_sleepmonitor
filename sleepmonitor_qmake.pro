@@ -10,7 +10,6 @@ CONFIG += c++17
 
 SOURCES += \
     cameraclass.cpp \
-    connectthread.cpp \
     failwindow.cpp \
     main.cpp \
     sleepmonitormain.cpp \
@@ -19,7 +18,6 @@ SOURCES += \
 
 HEADERS += \
     cameraclass.h \
-    connectthread.h \
     failwindow.h \
     sleepmonitormain.h \
     succeswindow.h \
