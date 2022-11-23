@@ -9,11 +9,10 @@
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/highgui.hpp>
-#include <opencv2/core/utils/logger.hpp>
+#include <opencv2/imgproc.hpp>
 #include "Spinnaker.h"
 #include "SpinVideo.h"
 #include <iostream>
-#include <sstream>
 #include <string>
 #include <chrono>
 #include <QProgressBar>
@@ -36,6 +35,7 @@ public:
     void StartRecording(int recordLength, int numParts);
     int InitCamera();
     int GetCamera();
+    //void GetSingleImage();
 
     /* Variables */
     CameraPtr camPtr;

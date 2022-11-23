@@ -236,4 +236,30 @@ int CameraClass::ConfigureCamera(INodeMap& nodeMap)
 
 }
 
-//void PrintDeviceInfo(INodeMap& nodeMap){}
+/*void CameraClass::GetSingleImage()
+{
+    try
+    {
+      CameraClass::camPtr->BeginAcquisition();
+
+      ImageProcessor processor;
+      processor.SetColorProcessing(HQ_LINEAR);
+
+      ImagePtr pResultImage = CameraClass::camPtr->GetNextImage(1000);
+
+      cv::Mat cvimg = cv::Mat(480, 640, CV_16UC1, pResultImage->GetData(), pResultImage->GetStride());
+
+      cvimg = cvimg - 23800;
+      cvimg = cvimg * 50;
+
+      pResultImage->Release();
+
+      //return cvimg;
+    }
+    catch (Spinnaker::Exception& e)
+    {
+        std::cout << "Error at preview: " << e.what() << "\n";
+        //cv::Mat cvimg;
+        //return cvimg;
+    }
+}*/

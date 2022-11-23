@@ -2,16 +2,17 @@
 #include "ui_sleepmonitormain.h"
 
 #include "waitwindow.h"
-#include "succeswindow.h"
-#include "failwindow.h"
+
 
 using namespace cv;
 
 SleepMonitorMain::SleepMonitorMain(QWidget *parent, CameraClass *cam)
-    : QMainWindow(parent), camera(cam), ui(new Ui::SleepMonitorMain)
+    : QMainWindow(parent), ui(new Ui::SleepMonitorMain), camera(cam)
 {
     ui->setupUi(this);
     //ui->recordingProgressBar->hide();
+
+    connect(this, &SleepMonitorMain::ConnectionFinished, this, &SleepMonitorMain::onConnectionFinished);
 }
 
 SleepMonitorMain::~SleepMonitorMain()
@@ -36,7 +37,6 @@ void SleepMonitorMain::on_startRecordingButton_clicked()
     waitwin.hide();
     ui->startRecordingButton->setEnabled(true);
 }
-
 
 
 void SleepMonitorMain::on_recordTimeMin_valueChanged(int arg1)
@@ -65,52 +65,105 @@ void SleepMonitorMain::on_recordTimeHour_valueChanged(int arg1)
 }
 
 
-void SleepMonitorMain::on_recordParts_valueChanged(int arg1)
-{
+void SleepMonitorMain::on_recordParts_valueChanged(int arg1){
     recordParts = arg1;
     SleepMonitorMain::UpdateDisplayedRecordTime((recordMinute + recordHour * 60) * recordParts);
 }
 
 
+void SleepMonitorMain::GUIGetCamera(int* result)
+{
+    *result = camera->GetCamera();
+    std::cout << "\nGetCamera End\n";
+    SetConnecting(false);
+    emit ConnectionFinished(*result);
+}
+
+
 void SleepMonitorMain::on_connectButton_clicked()
 {
-    //cameraThread = std::thread(startCamera);
-    //std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                                                                // one of this will be useful someday
-    //std::thread *th = new std::thread(GetCamera);
-    //th->join();
+    // one of this will be useful someday
+    ///    cameraThread = std::thread(startCamera);
+    ///    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    ///
+    ///    std::thread *th = new std::thread(GetCamera);
+    ///    th->join();
+    ///
+    ///    QTimer::singleShot(2000, this, &SleepMonitorMain::onConnectionFinished);
 
-    WaitWindow waitwin(this);
-    ui->startRecordingButton->setEnabled(false);
+    int result = 1;
 
-    waitwin.show();
-    int retval = camera->GetCamera();
-    waitwin.close();
+    if(GetConnecting()) return;
+    if(connectionThread.joinable()) connectionThread.join();
 
-    std::cout << "returned value: " << retval << "\n";
+    SetConnecting(true);
+    connectionThread = std::thread(&SleepMonitorMain::GUIGetCamera, this, &result);
 
-    if (retval == 0)
+    ui->connectButton->setEnabled(false);
+    ui->connectButton->setText("Connecting...");
+    //ui->connectButton->setStyleSheet("color: black");
+}
+
+
+void SleepMonitorMain::onConnectionFinished(int result)
+{
+    if (result == 0)
     {
         isConnected = true;
-        SuccesWindow resultwin;
-        resultwin.exec();
         if(!isTimeNull) ui->startRecordingButton->setEnabled(true);
         ui->connectButton->setText("Connected");
         ui->connectButton->setEnabled(false);
         ui->connectButton->setFont(QFont("Arial", 12));
-        ui->connectButton->setStyleSheet("color: green; font: bold");
+        ui->connectButton->setStyleSheet("color: green");
     }
     else
     {
         isConnected = false;
-        FailWindow resultwin;
-        resultwin.exec();
-        ui->connectButton->setStyleSheet("color: red; font: bold");
+        ui->connectButton->setEnabled(true);
         ui->connectButton->setText("Could not connect\nPress to try again");
+        //ui->connectButton->setStyleSheet("color: red");
     }
 }
 
-void SleepMonitorMain::onConnectionFinished()
+void SleepMonitorMain::on_showPreviewButton_clicked()
 {
-    std::cout << "signal received";
+    if(isPreview) return;
+    if(previewThread.joinable()) previewThread.join();
+
+    ui->imageLabel->show();
+    previewThread = std::thread(&SleepMonitorMain::CameraTest, this);
+    //SleepMonitorMain::CameraTest();
 }
+
+void SleepMonitorMain::CameraTest()
+{
+    isPreview = true;
+
+    cv::VideoCapture camera(0); // in linux check $ ls /dev/video0
+    if (!camera.isOpened())
+    {
+        std::cerr << "ERROR: Could not open camera" << std::endl;
+        return;
+    }
+
+    cv::Mat frame;
+
+
+    while (isPreview) {
+        camera >> frame;
+        cv::cvtColor(frame, frame, COLOR_BGR2RGB);
+        ui->imageLabel->setPixmap(QPixmap::fromImage(QImage(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_RGB888)));
+
+        if (cv::waitKey(10) == 27)
+            break;
+    }
+    camera.release();
+}
+
+
+void SleepMonitorMain::on_hidePreviewButton_clicked()
+{
+        ui->imageLabel->hide();
+        isPreview = false;
+}
+

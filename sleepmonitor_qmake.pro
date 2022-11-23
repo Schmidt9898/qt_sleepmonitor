@@ -10,23 +10,17 @@ CONFIG += c++17
 
 SOURCES += \
     cameraclass.cpp \
-    failwindow.cpp \
     main.cpp \
     sleepmonitormain.cpp \
-    succeswindow.cpp \
     waitwindow.cpp
 
 HEADERS += \
     cameraclass.h \
-    failwindow.h \
     sleepmonitormain.h \
-    succeswindow.h \
     waitwindow.h
 
 FORMS += \
-    failwindow.ui \
     sleepmonitormain.ui \
-    succeswindow.ui \
     waitwindow.ui
 	
 INCLUDEPATH += C:\opencv\build\include
