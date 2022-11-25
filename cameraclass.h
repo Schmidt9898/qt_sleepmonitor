@@ -26,6 +26,7 @@ using namespace Spinnaker::Video;
 #include "qobjectdefs.h"
 class CameraClass
 {
+
 public:
     CameraClass();
     ~CameraClass();
@@ -38,6 +39,10 @@ public:
     //void GetSingleImage();
 
     /* Variables */
+    bool isRecording = false;
+    int offset = 23800;
+    int gain = 50;
+
     CameraPtr camPtr;
     SystemPtr system;
     CameraList camList;

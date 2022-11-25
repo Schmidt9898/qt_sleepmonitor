@@ -1,8 +1,6 @@
 #include "sleepmonitormain.h"
 #include "ui_sleepmonitormain.h"
 
-#include "waitwindow.h"
-
 
 using namespace cv;
 
@@ -10,9 +8,13 @@ SleepMonitorMain::SleepMonitorMain(QWidget *parent, CameraClass *cam)
     : QMainWindow(parent), ui(new Ui::SleepMonitorMain), camera(cam)
 {
     ui->setupUi(this);
+
+    ui->recordingFinishedLabel->hide();
     //ui->recordingProgressBar->hide();
 
     connect(this, &SleepMonitorMain::ConnectionFinished, this, &SleepMonitorMain::onConnectionFinished);
+    connect(this, &SleepMonitorMain::UpdateProgressbar, this, &SleepMonitorMain::onUpdateProgressbar);
+    connect(this, &SleepMonitorMain::RecordingEnded, this, &SleepMonitorMain::onRecordingEnded);
 }
 
 SleepMonitorMain::~SleepMonitorMain()
@@ -30,12 +32,23 @@ void SleepMonitorMain::UpdateDisplayedRecordTime(int recordTime)
 
 void SleepMonitorMain::on_startRecordingButton_clicked()
 {
+    if (camera->isRecording) return;
+    if (recordingThread.joinable()) recordingThread.join();
+
     ui->startRecordingButton->setEnabled(false);
-    WaitWindow waitwin;
-    waitwin.show();
+    ui->stopRecordingButton->setEnabled(true);
+
+    recordingThread = std::thread(&SleepMonitorMain::startRecording, this);
+
+}
+
+
+void SleepMonitorMain::startRecording()
+{
     camera->StartRecording(recordHour*60 + recordMinute, recordParts);
-    waitwin.hide();
-    ui->startRecordingButton->setEnabled(true);
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+    emit RecordingEnded();
+    return;
 }
 
 
@@ -107,14 +120,17 @@ void SleepMonitorMain::on_connectButton_clicked()
 
 void SleepMonitorMain::onConnectionFinished(int result)
 {
-    if (result == 0)
+    if (result != 0)
     {
         isConnected = true;
         if(!isTimeNull) ui->startRecordingButton->setEnabled(true);
+
         ui->connectButton->setText("Connected");
         ui->connectButton->setEnabled(false);
         ui->connectButton->setFont(QFont("Arial", 12));
         ui->connectButton->setStyleSheet("color: green");
+
+        ui->showPreviewButton->setEnabled(true);
     }
     else
     {
@@ -122,8 +138,20 @@ void SleepMonitorMain::onConnectionFinished(int result)
         ui->connectButton->setEnabled(true);
         ui->connectButton->setText("Could not connect\nPress to try again");
         //ui->connectButton->setStyleSheet("color: red");
+
+        ui->showPreviewButton->setEnabled(true);
     }
 }
+
+
+void SleepMonitorMain::onRecordingEnded()
+{
+    std::cout << "recording ended, gui got signal\n\n";
+    ui->startRecordingButton->setEnabled(true);
+    ui->stopRecordingButton->setEnabled(false);
+    ui->recordingFinishedLabel->show();
+}
+
 
 void SleepMonitorMain::on_showPreviewButton_clicked()
 {
@@ -131,15 +159,65 @@ void SleepMonitorMain::on_showPreviewButton_clicked()
     if(previewThread.joinable()) previewThread.join();
 
     ui->imageLabel->show();
+    ui->showPreviewButton->setEnabled(false);
+    ui->hidePreviewButton->setEnabled(true);
     previewThread = std::thread(&SleepMonitorMain::CameraTest, this);
     //SleepMonitorMain::CameraTest();
 }
+
+
+void SleepMonitorMain::on_hidePreviewButton_clicked()
+{
+        ui->imageLabel->hide();
+        ui->showPreviewButton->setEnabled(true);
+        ui->hidePreviewButton->setEnabled(false);
+        isPreview = false;
+}
+
+
+void SleepMonitorMain::DisplayPreview()
+{
+    isPreview = true;
+
+    Spinnaker::ImagePtr spinImgPtr;
+    Mat previewFrame;
+    try
+    {
+        camera->camPtr->BeginAcquisition();
+    }
+    catch (Spinnaker::Exception& e)
+    {
+        std::cout << "Error at preview: " << e.what() << "\n";
+        return;
+    }
+
+    while (true)
+    {
+        spinImgPtr = camera->camPtr->GetNextImage(1000);
+        previewFrame = cv::Mat(480, 640, CV_16UC1, spinImgPtr->GetData(), spinImgPtr->GetStride());
+        previewFrame -= offset;
+        previewFrame *= gain;
+        ui->imageLabel->setPixmap(QPixmap::fromImage(QImage(previewFrame.data,
+                                                            previewFrame.cols,
+                                                            previewFrame.rows,
+                                                            previewFrame.step,
+                                                            QImage::Format_Grayscale16)));
+        spinImgPtr->Release();
+
+        if (!isPreview)
+        {
+            camera->camPtr->EndAcquisition();
+            break;
+        }
+    }
+}
+
 
 void SleepMonitorMain::CameraTest()
 {
     isPreview = true;
 
-    cv::VideoCapture camera(0); // in linux check $ ls /dev/video0
+    cv::VideoCapture camera(0);
     if (!camera.isOpened())
     {
         std::cerr << "ERROR: Could not open camera" << std::endl;
@@ -149,10 +227,19 @@ void SleepMonitorMain::CameraTest()
     cv::Mat frame;
 
 
-    while (isPreview) {
+    while (isPreview)
+    {
         camera >> frame;
-        cv::cvtColor(frame, frame, COLOR_BGR2RGB);
-        ui->imageLabel->setPixmap(QPixmap::fromImage(QImage(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_RGB888)));
+
+        cv::cvtColor(frame, frame, COLOR_BGR2GRAY);
+
+        frame -= offset;
+        frame *= gain;
+
+        ui->imageLabel->setPixmap(QPixmap::fromImage(QImage(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_Grayscale8)));
+
+        progress += 1;
+        if (progress%10 == 0) emit UpdateProgressbar(progress/10);
 
         if (cv::waitKey(10) == 27)
             break;
@@ -161,9 +248,31 @@ void SleepMonitorMain::CameraTest()
 }
 
 
-void SleepMonitorMain::on_hidePreviewButton_clicked()
+void SleepMonitorMain::onUpdateProgressbar(int value)
 {
-        ui->imageLabel->hide();
-        isPreview = false;
+    ui->recordingProgressBar->setValue(value);
+}
+
+
+void SleepMonitorMain::on_offsetSlider_valueChanged(int value)
+{
+    ui->offsetValueLabel->setText(QString::number(value));
+    this->offset = value;
+    camera->offset = value;
+}
+
+
+void SleepMonitorMain::on_gainSlider_valueChanged(int value)
+{
+    ui->gainValueLabel->setText(QString::number(value));
+    this->gain = value;
+    camera->gain = value;
+}
+
+
+void SleepMonitorMain::on_defaultButton_clicked()
+{
+    ui->gainSlider->setValue(1);
+    ui->offsetSlider->setValue(0);
 }
 

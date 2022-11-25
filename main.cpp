@@ -34,9 +34,10 @@ int main(int argc, char *argv[])
 
     //std::cout << System::GetInstance()->GetCameras().GetByIndex(0);
 
-    CameraClass camera;
-    SleepMonitorMain mainwindow(nullptr, &camera);
+    CameraClass* camera = new CameraClass;
+    SleepMonitorMain mainwindow(nullptr, camera);
     mainwindow.show();
-    return app.exec();
+    int result = app.exec();
+    return result;
 }
 

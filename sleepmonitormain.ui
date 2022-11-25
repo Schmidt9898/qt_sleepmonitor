@@ -31,8 +31,8 @@
      <rect>
       <x>670</x>
       <y>240</y>
-      <width>141</width>
-      <height>29</height>
+      <width>140</width>
+      <height>30</height>
      </rect>
     </property>
     <property name="font">
@@ -52,8 +52,8 @@
      <rect>
       <x>840</x>
       <y>240</y>
-      <width>141</width>
-      <height>29</height>
+      <width>140</width>
+      <height>30</height>
      </rect>
     </property>
     <property name="font">
@@ -62,10 +62,13 @@
      </font>
     </property>
     <property name="text">
-     <string>stopbutton @later</string>
+     <string>Stop Recording</string>
     </property>
    </widget>
    <widget class="QPushButton" name="showPreviewButton">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
     <property name="geometry">
      <rect>
       <x>670</x>
@@ -84,6 +87,9 @@
     </property>
    </widget>
    <widget class="QPushButton" name="hidePreviewButton">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
     <property name="geometry">
      <rect>
       <x>840</x>
@@ -105,15 +111,21 @@
     <property name="geometry">
      <rect>
       <x>670</x>
-      <y>400</y>
-      <width>311</width>
-      <height>41</height>
+      <y>385</y>
+      <width>310</width>
+      <height>25</height>
      </rect>
     </property>
     <property name="font">
      <font>
       <family>Arial</family>
      </font>
+    </property>
+    <property name="minimum">
+     <number>0</number>
+    </property>
+    <property name="maximum">
+     <number>255</number>
     </property>
     <property name="orientation">
      <enum>Qt::Horizontal</enum>
@@ -122,10 +134,10 @@
    <widget class="QLabel" name="offsetLabel">
     <property name="geometry">
      <rect>
-      <x>730</x>
-      <y>370</y>
-      <width>191</width>
-      <height>31</height>
+      <x>670</x>
+      <y>350</y>
+      <width>180</width>
+      <height>30</height>
      </rect>
     </property>
     <property name="font">
@@ -141,13 +153,13 @@
      <set>Qt::AlignCenter</set>
     </property>
    </widget>
-   <widget class="QSlider" name="multiplySlider">
+   <widget class="QSlider" name="gainSlider">
     <property name="geometry">
      <rect>
       <x>670</x>
-      <y>490</y>
-      <width>311</width>
-      <height>41</height>
+      <y>455</y>
+      <width>310</width>
+      <height>25</height>
      </rect>
     </property>
     <property name="font">
@@ -155,17 +167,23 @@
       <family>Arial</family>
      </font>
     </property>
+    <property name="minimum">
+     <number>1</number>
+    </property>
+    <property name="maximum">
+     <number>100</number>
+    </property>
     <property name="orientation">
      <enum>Qt::Horizontal</enum>
     </property>
    </widget>
-   <widget class="QLabel" name="multiplyLabel">
+   <widget class="QLabel" name="gainLabel">
     <property name="geometry">
      <rect>
-      <x>720</x>
-      <y>459</y>
-      <width>211</width>
-      <height>31</height>
+      <x>670</x>
+      <y>420</y>
+      <width>180</width>
+      <height>30</height>
      </rect>
     </property>
     <property name="font">
@@ -175,7 +193,7 @@
      </font>
     </property>
     <property name="text">
-     <string>Thermal setting (multiply):</string>
+     <string>Thermal setting (gain):</string>
     </property>
     <property name="textFormat">
      <enum>Qt::AutoText</enum>
@@ -191,9 +209,9 @@
     <property name="geometry">
      <rect>
       <x>670</x>
-      <y>280</y>
-      <width>311</width>
-      <height>23</height>
+      <y>290</y>
+      <width>310</width>
+      <height>20</height>
      </rect>
     </property>
     <property name="font">
@@ -207,6 +225,9 @@
     </property>
     <property name="orientation">
      <enum>Qt::Horizontal</enum>
+    </property>
+    <property name="textDirection">
+     <enum>QProgressBar::TopToBottom</enum>
     </property>
     <property name="format">
      <string>%p%</string>
@@ -454,6 +475,124 @@
      <number>0</number>
     </property>
    </widget>
+   <widget class="QLabel" name="offsetValueLabel">
+    <property name="geometry">
+     <rect>
+      <x>860</x>
+      <y>350</y>
+      <width>60</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Arial</family>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>0</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="gainValueLabel">
+    <property name="geometry">
+     <rect>
+      <x>860</x>
+      <y>420</y>
+      <width>60</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Arial</family>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>1</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QFrame" name="offsetFrame">
+    <property name="geometry">
+     <rect>
+      <x>860</x>
+      <y>350</y>
+      <width>60</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::WinPanel</enum>
+    </property>
+    <property name="frameShadow">
+     <enum>QFrame::Sunken</enum>
+    </property>
+   </widget>
+   <widget class="QFrame" name="gainFrame">
+    <property name="geometry">
+     <rect>
+      <x>860</x>
+      <y>420</y>
+      <width>60</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::WinPanel</enum>
+    </property>
+    <property name="frameShadow">
+     <enum>QFrame::Sunken</enum>
+    </property>
+   </widget>
+   <widget class="QLabel" name="recordingFinishedLabel">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>780</x>
+      <y>310</y>
+      <width>90</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+      <italic>false</italic>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: rgb(0, 160, 0);</string>
+    </property>
+    <property name="text">
+     <string>Finished</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="defaultButton">
+    <property name="geometry">
+     <rect>
+      <x>775</x>
+      <y>490</y>
+      <width>100</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Default</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -461,7 +600,7 @@
      <x>0</x>
      <y>0</y>
      <width>1000</width>
-     <height>21</height>
+     <height>25</height>
     </rect>
    </property>
   </widget>

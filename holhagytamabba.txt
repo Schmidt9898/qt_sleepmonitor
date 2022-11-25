@@ -1,9 +1,0 @@
-kész van az idő beállítás
-kész van a ellenőrzése hogy mikor lehet aktív a startrecord gomb
-
-tesztelni kell a felvétel indítását és a progress bart
-kigondolni a stoprecord létjogosultságát
-kivitelezni az offset és multiply állítást
-kivitelezni a preview ablakot, ha egyáltalán lehet (opengl?)
-dolgozni kell a threadingen, Lacit esetleg megkérdezni
-

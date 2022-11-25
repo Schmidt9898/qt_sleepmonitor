@@ -2,7 +2,6 @@
 
 CameraClass::CameraClass()
 {
-
 }
 
 CameraClass::~CameraClass()
@@ -85,104 +84,108 @@ int CameraClass::InitCamera()
 void CameraClass::StartRecording(int recordLength, int numParts)
 {
     std::cout << "Recording started\n";
+    isRecording = true;
     try
     {
-        for (int curPart = 1; curPart <= numParts; curPart++)
+        int curPart = 0;
+        while (curPart < numParts && isRecording)
         {
-        if (!camPtr->IsInitialized()) camPtr->Init();
+            curPart++;
+            if (!camPtr->IsInitialized()) camPtr->Init();
 
-        // Calculate required number of frames for 1 video file
-        const int numImages = (FRAMERATE * recordLength) + 24;
+            // Calculate required number of frames for 1 video file
+            const int numImages = (FRAMERATE * recordLength) + 24;
 
-        // Begin acquiring images
-        CameraClass::camPtr->BeginAcquisition();
-        std::cout << "Acquisition started..." << "\n" << "\n";
+            // Begin acquiring images
+            CameraClass::camPtr->BeginAcquisition();
+            std::cout << "Acquisition started..." << "\n" << "\n";
 
-        // *** NOTES ***
-        // By default, if no specific color processing algorithm is set, the image
-        // processor will default to NEAREST_NEIGHBOR method.
-        ImageProcessor processor;
-        processor.SetColorProcessing(HQ_LINEAR);
+            // *** NOTES ***
+            // By default, if no specific color processing algorithm is set, the image
+            // processor will default to NEAREST_NEIGHBOR method.
+            ImageProcessor processor;
+            processor.SetColorProcessing(HQ_LINEAR);
 
-        SpinVideo video;
-        //const unsigned int k_videoFileSize_MB = 4096;
-        //video.SetMaximumFileSize(k_videoFileSize_MB);
+            SpinVideo video;
+            //const unsigned int k_videoFileSize_MB = 4096;
+            //video.SetMaximumFileSize(k_videoFileSize_MB);
 
-        Video::H264Option option;
-        option.frameRate = FRAMERATE;
-        option.bitrate = BITRATE;
-        option.height = HEIGHT;
-        option.width = WIDTH;
+            Video::H264Option option;
+            option.frameRate = FRAMERATE;
+            option.bitrate = BITRATE;
+            option.height = HEIGHT;
+            option.width = WIDTH;
 
-        std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-        std::chrono::steady_clock::time_point elapsed;
+            std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+            std::chrono::steady_clock::time_point elapsed;
 
-        std::string videoFilename = "Video_" + std::to_string(curPart) + "_" + std::to_string(time(0));
-        video.Open(videoFilename.c_str(), option);
+            std::string videoFilename = "Video_" + std::to_string(curPart) + "_" + std::to_string(time(0));
+            video.Open(videoFilename.c_str(), option);
 
-        // *** IMPORTAN NOTE TO SELF ***
-        // The first 24 frames in the MP4 file won't be buffered
-        for (int imageCnt = 1; imageCnt <= numImages; imageCnt++)
-        {
-            try
+            // *** IMPORTAN NOTE TO SELF ***
+            // The first 24 frames in the MP4 file won't be buffered
+            int imageCnt = 0;
+            while(imageCnt < numImages && isRecording)
             {
-
-                // Retrieve the next received image
-                ImagePtr pResultImage = CameraClass::camPtr->GetNextImage(1000);
-
-                if (pResultImage->IsIncomplete())
+                imageCnt++;
+                try
                 {
-                    //SetConsoleTextAttribute(hConsole, 12);
-                    std::cout << "Image "<< imageCnt << " is incomplete with image status " << pResultImage->GetImageStatus() << "..." << "\n"
-                        << "\n";
+
+                    // Retrieve the next received image
+                    ImagePtr pResultImage = CameraClass::camPtr->GetNextImage(1000);
+
+                    if (pResultImage->IsIncomplete())
+                    {
+                        //SetConsoleTextAttribute(hConsole, 12);
+                        std::cout << "Image "<< imageCnt << " is incomplete with image status " << pResultImage->GetImageStatus() << "..." << "\n"
+                            << "\n";
+                    }
+                    else
+                    {
+                        //SetConsoleTextAttribute(hConsole, 10);
+
+                        std::cout << "------------------------" << "\n";
+                        std::cout << "Grabbed image " << imageCnt << "/" << numImages << "\n";
+
+                        cv::Mat cvimg = cv::Mat(480, 640, CV_16UC1, pResultImage->GetData(), pResultImage->GetStride());
+
+                        cvimg -= offset;
+                        cvimg *= gain;
+
+                        // Deep copy image into mp4 file
+                        video.Append(processor.Convert(pResultImage, PixelFormat_Mono8));
+                        std::cout << "Appended image " << imageCnt << "/" << numImages << " to part:" << curPart << "\n";
+
+                        // Release image
+                        pResultImage->Release();
+
+                        elapsed = std::chrono::steady_clock::now();
+                        std::cout << "Recording time elapsed: "
+                                  << std::chrono::duration_cast<std::chrono::seconds>(elapsed - begin).count()
+                                  << "s" << "\n";
+
+                        //int processPercent = imageCnt*100/numImages;
+                        //progressBar->setValue(processPercent);
+
+                        std::cout << "------------------------" << "\n";
+                    }
                 }
-                else
+                catch (Spinnaker::Exception& e)
                 {
-                    //SetConsoleTextAttribute(hConsole, 10);
-
-                    std::cout << "------------------------" << "\n";
-                    std::cout << "Grabbed image " << imageCnt << "/" << numImages << "\n";
-
-                    cv::Mat cvimg = cv::Mat(480, 640, CV_16UC1, pResultImage->GetData(), pResultImage->GetStride());
-
-                    cvimg = cvimg - 23800;
-                    cvimg = cvimg * 50;
-
-                    // Deep copy image into mp4 file
-                    video.Append(processor.Convert(pResultImage, PixelFormat_Mono8));
-                    std::cout << "Appended image " << imageCnt << "/" << numImages << " to part:" << curPart << "\n";
-
-                    // Release image
-                    pResultImage->Release();
-
-                    elapsed = std::chrono::steady_clock::now();
-                    std::cout << "Recording time elapsed: "
-                              << std::chrono::duration_cast<std::chrono::seconds>(elapsed - begin).count()
-                              << "s" << "\n";
-
-                    //int processPercent = imageCnt*100/numImages;
-                    //progressBar->setValue(processPercent);
-
-                    std::cout << "------------------------" << "\n";
+                    std::cout << "Error: " << e.what() << "\n";
                 }
             }
+            video.Close();
 
-            catch (Spinnaker::Exception& e)
-            {
-                std::cout << "Error: " << e.what() << "\n";
-            }
-        }
-        video.Close();
+            //const char* avi_filename = videoFilename.c_str() + '.avi';
+            //const char* mp4_filename = videoFilename.c_str() + '.mp4';
+            //rename(avi_filename, mp4_filename);
 
-        //const char* avi_filename = videoFilename.c_str() + '.avi';
-        //const char* mp4_filename = videoFilename.c_str() + '.mp4';
-        //rename(avi_filename, mp4_filename);
+            std::cout << "\n" << "Video saved at " << videoFilename << ".avi" << "\n";
 
-        std::cout << "\n" << "Video saved at " << videoFilename << ".avi" << "\n";
-
-        // End acquisition
-        CameraClass::camPtr->EndAcquisition();
-        CameraClass::camPtr->DeInit();
+            // End acquisition
+            CameraClass::camPtr->EndAcquisition();
+            CameraClass::camPtr->DeInit();
         }
 
     std::cout << "Recording ended\n";
@@ -192,7 +195,7 @@ void CameraClass::StartRecording(int recordLength, int numParts)
     {
         std::cout << "Error at recording: " << e.what() << "\n";
     }
-
+    isRecording = false;
 }
 
 int CameraClass::ConfigureCamera(INodeMap& nodeMap)
