@@ -6,16 +6,17 @@
 #define HEIGHT 480
 #define WIDTH 640
 
+#include <QMainWindow>
+#include <QObject>
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
-#include "Spinnaker.h"
-#include "SpinVideo.h"
 #include <iostream>
 #include <string>
 #include <chrono>
-#include <QProgressBar>
+#include "Spinnaker.h"
+#include "SpinVideo.h"
 
 using namespace Spinnaker;
 using namespace Spinnaker::GenApi;
@@ -23,7 +24,7 @@ using namespace Spinnaker::GenICam;
 using namespace Spinnaker::Video;
 
 
-#include "qobjectdefs.h"
+
 class CameraClass
 {
 
@@ -40,17 +41,18 @@ public:
 
     /* Variables */
     bool isRecording = false;
+    bool isPreview = false;
     int offset = 23800;
     int gain = 50;
 
     CameraPtr camPtr;
     SystemPtr system;
     CameraList camList;
-
-
 private:
 
 signals:
+    void CameraDisconnected();
+    void UpdateProgressbar();
 
 private slots:
 

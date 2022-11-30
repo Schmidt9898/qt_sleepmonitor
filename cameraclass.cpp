@@ -17,6 +17,7 @@ int CameraClass::GetCamera()
     int result = 0;
     try
     {
+        std::cout << "Connection started...\n";
         // Retrieve singleton reference to system object
         system = System::GetInstance();
 
@@ -29,11 +30,11 @@ int CameraClass::GetCamera()
         // Finish if there are no cameras
         if (numCameras == 0)
         {
-            std::cout << "Camera not connected!" << "\n";
+            std::cout << "Camera not connected!\n";
             return 1;
         }
 
-        std::cout << "Camera detected. Returning pointer..." << "\n";
+        std::cout << "Camera detected. Starting initialization...\n";
 
         camPtr = camList.GetByIndex(0);
         result = result | InitCamera();
@@ -43,7 +44,7 @@ int CameraClass::GetCamera()
         //std::cout << "clearing list\n";
         //camList.Clear();
 
-        std::cout << "returning\n";
+        std::cout << "Returning camera pointer\n";
         return result;
     }
     catch(Spinnaker::Exception& e)
@@ -56,7 +57,7 @@ int CameraClass::GetCamera()
 int CameraClass::InitCamera()
 {
     int result = 0;
-    std::cout << "Camera init started\n";
+    std::cout << "\nInitializing camera\n";
     try
     {
         camPtr->Init();
@@ -69,7 +70,7 @@ int CameraClass::InitCamera()
 
         //camPtr->DeInit();
 
-        std::cout << "Camera init ended\n";
+        std::cout << "Initialization ended\n";
 
         return result;
     }
@@ -85,6 +86,7 @@ void CameraClass::StartRecording(int recordLength, int numParts)
 {
     std::cout << "Recording started\n";
     isRecording = true;
+    SpinVideo video;
     try
     {
         int curPart = 0;
@@ -97,7 +99,7 @@ void CameraClass::StartRecording(int recordLength, int numParts)
             const int numImages = (FRAMERATE * recordLength) + 24;
 
             // Begin acquiring images
-            CameraClass::camPtr->BeginAcquisition();
+            if (!camPtr->IsStreaming()) CameraClass::camPtr->BeginAcquisition();
             std::cout << "Acquisition started..." << "\n" << "\n";
 
             // *** NOTES ***
@@ -106,7 +108,6 @@ void CameraClass::StartRecording(int recordLength, int numParts)
             ImageProcessor processor;
             processor.SetColorProcessing(HQ_LINEAR);
 
-            SpinVideo video;
             //const unsigned int k_videoFileSize_MB = 4096;
             //video.SetMaximumFileSize(k_videoFileSize_MB);
 
@@ -184,51 +185,59 @@ void CameraClass::StartRecording(int recordLength, int numParts)
             std::cout << "\n" << "Video saved at " << videoFilename << ".avi" << "\n";
 
             // End acquisition
-            CameraClass::camPtr->EndAcquisition();
-            CameraClass::camPtr->DeInit();
+            if (!isPreview)
+            {
+                CameraClass::camPtr->EndAcquisition();
+                CameraClass::camPtr->DeInit();
+            }
         }
 
-    std::cout << "Recording ended\n";
-    return;
+        std::cout << "Recording ended\n";
+        isRecording = false;
+        return;
     }
+
     catch (Spinnaker::Exception& e)
     {
         std::cout << "Error at recording: " << e.what() << "\n";
+        video.Close();
+        isRecording = false;
     }
-    isRecording = false;
+
+
 }
 
 int CameraClass::ConfigureCamera(INodeMap& nodeMap)
 {
-    std::cout << "Camera config started\n";
+    std::cout << "Camera config started:\n\n";
     try
     {
-        std::cout << "\n" << "\n" << "\t*** CONFIGURING CAMERA SETTINGS ***" << "\n";
+        std::cout << "Setting acquisition mode to continuous...\n";
         // Set acquisition mode to continuous
         CEnumerationPtr ptrAcquisitionMode = nodeMap.GetNode("AcquisitionMode");
         if (!IsAvailable(ptrAcquisitionMode) || !IsWritable(ptrAcquisitionMode))
         {
-            std::cout << "Unable to set acquisition mode to continuous (node retrieval). Aborting..." << "\n" << "\n";
+            std::cout << "Unable to set acquisition mode to continuous (node retrieval). Aborting...\n";
             return 1;
         }
 
         CEnumEntryPtr ptrAcquisitionModeContinuous = ptrAcquisitionMode->GetEntryByName("Continuous");
         if (!IsAvailable(ptrAcquisitionModeContinuous) || !IsReadable(ptrAcquisitionModeContinuous))
         {
-            std::cout << "Unable to set acquisition mode to continuous (entry 'continuous' retrieval). Aborting..." << "\n"
-                << "\n";
+            std::cout << "Unable to set acquisition mode to continuous (entry 'continuous' retrieval). Aborting...\n";
             return 1;
         }
 
         int64_t acquisitionModeContinuous = ptrAcquisitionModeContinuous->GetValue();
         ptrAcquisitionMode->SetIntValue(acquisitionModeContinuous);
-        std::cout << "----- Acquisition mode set to continuous... -----" << "\n";
+        std::cout << "Setting done\n\n";
 
+        std::cout << "Setting acquisition framerate to 10 fps...\n";
         CFloatPtr ptrFramerate = nodeMap.GetNode("AcquisitionFrameRate");
         ptrFramerate->SetValue(FRAMERATE);
-        std::cout << "----- Acquisition framerate set to 10 fps -----" << "\n";
+        std::cout << "Setting done\n";
 
-        std::cout << "Camera config ended\n";
+        std::cout << "\nCamera config ended\n";
         return 0;
     }
     catch (Spinnaker::Exception& e)
