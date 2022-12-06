@@ -8,6 +8,7 @@
 
 #include <QMainWindow>
 #include <QObject>
+#include <QLabel>
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/highgui.hpp>
@@ -23,8 +24,6 @@ using namespace Spinnaker::GenApi;
 using namespace Spinnaker::GenICam;
 using namespace Spinnaker::Video;
 
-
-
 class CameraClass
 {
 
@@ -34,7 +33,7 @@ public:
 
     /* Functions */
     int ConfigureCamera(INodeMap& nodeMap);
-    void StartRecording(int recordLength, int numParts);
+    void StartRecording(int recordLength, int numParts, QLabel *previewFrame);
     int InitCamera();
     int GetCamera();
     //void GetSingleImage();
@@ -44,7 +43,10 @@ public:
     bool isPreview = false;
     int offset = 23800;
     int gain = 50;
+    int totalFrames;
+    int currentFrameCount;
 
+    cv::Mat currentFrame;
     CameraPtr camPtr;
     SystemPtr system;
     CameraList camList;

@@ -9,7 +9,6 @@ CameraClass::~CameraClass()
     camPtr->DeInit();
     camList.Clear();
     system->ReleaseInstance();
-    //delete this;
 }
 
 int CameraClass::GetCamera()
@@ -82,11 +81,16 @@ int CameraClass::InitCamera()
 
 }
 
-void CameraClass::StartRecording(int recordLength, int numParts)
+void CameraClass::StartRecording(int recordSeconds, int numParts, QLabel* previewFrame)
 {
     std::cout << "Recording started\n";
+
     isRecording = true;
     SpinVideo video;
+
+    totalFrames = ((recordSeconds * 10) + 24) * numParts;
+    currentFrameCount = 0;
+
     try
     {
         int curPart = 0;
@@ -96,7 +100,7 @@ void CameraClass::StartRecording(int recordLength, int numParts)
             if (!camPtr->IsInitialized()) camPtr->Init();
 
             // Calculate required number of frames for 1 video file
-            const int numImages = (FRAMERATE * recordLength) + 24;
+            const int numImages = (FRAMERATE * recordSeconds) + 24;
 
             // Begin acquiring images
             if (!camPtr->IsStreaming()) CameraClass::camPtr->BeginAcquisition();
@@ -124,34 +128,42 @@ void CameraClass::StartRecording(int recordLength, int numParts)
             video.Open(videoFilename.c_str(), option);
 
             // *** IMPORTAN NOTE TO SELF ***
-            // The first 24 frames in the MP4 file won't be buffered
+            // The first 24 frames in the MP4 file won't be saved
+            // and at least 24 frames must be appended to the video
             int imageCnt = 0;
             while(imageCnt < numImages && isRecording)
             {
                 imageCnt++;
+                currentFrameCount++;
                 try
                 {
-
                     // Retrieve the next received image
                     ImagePtr pResultImage = CameraClass::camPtr->GetNextImage(1000);
 
                     if (pResultImage->IsIncomplete())
                     {
-                        //SetConsoleTextAttribute(hConsole, 12);
                         std::cout << "Image "<< imageCnt << " is incomplete with image status " << pResultImage->GetImageStatus() << "..." << "\n"
                             << "\n";
                     }
                     else
                     {
-                        //SetConsoleTextAttribute(hConsole, 10);
-
                         std::cout << "------------------------" << "\n";
                         std::cout << "Grabbed image " << imageCnt << "/" << numImages << "\n";
 
-                        cv::Mat cvimg = cv::Mat(480, 640, CV_16UC1, pResultImage->GetData(), pResultImage->GetStride());
+                        currentFrame = cv::Mat(480, 640, CV_16UC1, pResultImage->GetData(), pResultImage->GetStride());
+                        currentFrame -= offset;
+                        currentFrame *= gain;
 
-                        cvimg -= offset;
-                        cvimg *= gain;
+                        if (isPreview)
+                        {
+                            previewFrame->setPixmap(QPixmap::fromImage(QImage(currentFrame.data,
+                                                                                currentFrame.cols,
+                                                                                currentFrame.rows,
+                                                                                currentFrame.step,
+                                                                                QImage::Format_Grayscale16)));
+                        }
+
+
 
                         // Deep copy image into mp4 file
                         video.Append(processor.Convert(pResultImage, PixelFormat_Mono8));
@@ -196,15 +208,12 @@ void CameraClass::StartRecording(int recordLength, int numParts)
         isRecording = false;
         return;
     }
-
     catch (Spinnaker::Exception& e)
     {
         std::cout << "Error at recording: " << e.what() << "\n";
         video.Close();
         isRecording = false;
     }
-
-
 }
 
 int CameraClass::ConfigureCamera(INodeMap& nodeMap)
@@ -247,31 +256,3 @@ int CameraClass::ConfigureCamera(INodeMap& nodeMap)
     }
 
 }
-
-/*void CameraClass::GetSingleImage()
-{
-    try
-    {
-      CameraClass::camPtr->BeginAcquisition();
-
-      ImageProcessor processor;
-      processor.SetColorProcessing(HQ_LINEAR);
-
-      ImagePtr pResultImage = CameraClass::camPtr->GetNextImage(1000);
-
-      cv::Mat cvimg = cv::Mat(480, 640, CV_16UC1, pResultImage->GetData(), pResultImage->GetStride());
-
-      cvimg = cvimg - 23800;
-      cvimg = cvimg * 50;
-
-      pResultImage->Release();
-
-      //return cvimg;
-    }
-    catch (Spinnaker::Exception& e)
-    {
-        std::cout << "Error at preview: " << e.what() << "\n";
-        //cv::Mat cvimg;
-        //return cvimg;
-    }
-}*/

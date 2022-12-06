@@ -82,6 +82,8 @@ public slots:
     void onConnectionFinished(int result);
     void onCameraDisconnected();
 
+    void onUpdateProgressbar(int progress);
+
     void onRecordingEnded();
     void onRecordingStarted();
 
@@ -93,6 +95,8 @@ public slots:
 signals:
     void ConnectionFinished(int result);
     void CameraDisconnected();
+
+    void UpdateProgressbar(int progress);
 
     void RecordingStarted();
     void RecordingEnded();

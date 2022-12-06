@@ -4,17 +4,38 @@
 
 using namespace cv;
 
-SleepMonitorMain::SleepMonitorMain(QWidget *parent, CameraClass *cam)
-    : QMainWindow(parent), ui(new Ui::SleepMonitorMain), camera(cam)
+SleepMonitorMain::SleepMonitorMain(QWidget *parent, CameraClass *cam) : QMainWindow(parent), ui(new Ui::SleepMonitorMain), camera(cam)
 {
     ui->setupUi(this);
 
     ui->recordingFinishedLabel->hide();
-    ui->recordingProgressBar->hide();
+    //ui->recordingProgressBar->hide();
     ui->disconnectedLabel->hide();
+
+    QIcon recordIcon(QPixmap("../sleepmonitor_qmake/Assets/Icons/recordIcon.png"));
+    QIcon stopIcon(QPixmap("../sleepmonitor_qmake/Assets/Icons/stopIcon.png"));
+    QIcon previewIcon(QPixmap("../sleepmonitor_qmake/Assets/Icons/previewIcon.png"));
+    QIcon stopPreviewIcon(QPixmap("../sleepmonitor_qmake/Assets/Icons/stopPreviewIcon.png"));
+    QIcon connectIcon(QPixmap("../sleepmonitor_qmake/Assets/Icons/connectIcon.png"));
+
+    ui->startRecordingButton->setIcon(recordIcon);
+    ui->stopRecordingButton->setIcon(stopIcon);
+    ui->showPreviewButton->setIcon(previewIcon);
+    ui->hidePreviewButton->setIcon(stopPreviewIcon);
+    ui->connectButton->setIcon(connectIcon);
+
+    ui->startRecordingButton->setText("");
+    ui->stopRecordingButton->setText("");
+    ui->showPreviewButton->setText("");
+    ui->hidePreviewButton->setText("");
+    ui->connectButton->setText("");
+
+    //ui->connectButton->setIconSize(QSize(50,50));
 
     connect(this, &SleepMonitorMain::ConnectionFinished, this, &SleepMonitorMain::onConnectionFinished);
     connect(this, &SleepMonitorMain::CameraDisconnected, this, &SleepMonitorMain::onCameraDisconnected);
+
+    connect(this, &SleepMonitorMain::UpdateProgressbar, this, &SleepMonitorMain::onUpdateProgressbar);
 
     connect(this, &SleepMonitorMain::RecordingEnded, this, &SleepMonitorMain::onRecordingEnded);
     connect(this, &SleepMonitorMain::RecordingStarted, this, &SleepMonitorMain::onRecordingStarted);
@@ -25,14 +46,15 @@ SleepMonitorMain::SleepMonitorMain(QWidget *parent, CameraClass *cam)
 
 SleepMonitorMain::~SleepMonitorMain()
 {
-    //camera->~CameraClass();
     //delete ui;
+
     camera->isRecording = false;
     camera->isPreview = false;
     isClosing = true;
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     if (statusCheckThread.joinable()) statusCheckThread.join();
     if (previewThread.joinable()) previewThread.join();
+    if (recordingThread.joinable()) recordingThread.join();
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -98,7 +120,7 @@ void SleepMonitorMain::startRecording()
     emit RecordingStarted();
 
     int recordSeconds = recordHour*60 + recordMinute; // recordHour*3600 + recordMinute * 60;
-    camera->StartRecording(recordSeconds, recordParts);
+    camera->StartRecording(recordSeconds, recordParts, ui->imageLabel);
 
     emit RecordingEnded();
     return;
@@ -117,6 +139,7 @@ void SleepMonitorMain::onRecordingEnded()
     std::cout << "recording ended, gui got signal\n\n";
     ui->startRecordingButton->setEnabled(true);
     ui->stopRecordingButton->setEnabled(false);
+    ui->recordingProgressBar->setValue(100);
     ui->recordingFinishedLabel->show();
 }
 
@@ -142,8 +165,7 @@ void SleepMonitorMain::on_connectButton_clicked()
     statusCheckThread = std::thread(&SleepMonitorMain::GUIGetCamera, this, &result);
 
     ui->connectButton->setEnabled(false);
-    ui->connectButton->setText("Connecting...");
-    //ui->connectButton->setStyleSheet("color: black");
+    ui->connectionStateLabel->setText("Connecting...");
 }
 
 void SleepMonitorMain::onConnectionFinished(int result)
@@ -155,8 +177,9 @@ void SleepMonitorMain::onConnectionFinished(int result)
 
         std::cout << "Connection finished. Camera is now accessible.\n";
         ui->connectButton->setEnabled(false);
-        ui->connectButton->setFont(QFont("Arial", 12));
-        ui->connectButton->setStyleSheet("color: green");
+        ui->connectionStateLabel->setText("Connected");
+        //ui->connectionStateLabel->setFont(QFont("Arial", 12));
+        ui->connectionStateLabel->setStyleSheet("color: green");
 
         ui->showPreviewButton->setEnabled(true);
         ui->disconnectedLabel->hide();
@@ -172,8 +195,7 @@ void SleepMonitorMain::onConnectionFinished(int result)
     {
         isConnected = false;
         ui->connectButton->setEnabled(true);
-        ui->connectButton->setText("Could not connect\nPress to try again");
-        //ui->connectButton->setStyleSheet("color: red");
+        ui->connectionStateLabel->setText("Could not connect\nPress to try again");
 
         std::cout << "Connection failed.\n";
 
@@ -223,34 +245,33 @@ void SleepMonitorMain::DisplayPreview()
 
     emit PreviewStarted();
 
-    while (true)
+    while (camera->isPreview)
     {
         try
         {
-            spinImgPtr = camera->camPtr->GetNextImage(1000);
-            previewFrame = cv::Mat(480, 640, CV_16UC1, spinImgPtr->GetData(), spinImgPtr->GetStride());
-            previewFrame -= camera->offset;
-            previewFrame *= camera->gain;
-            ui->imageLabel->setPixmap(QPixmap::fromImage(QImage(previewFrame.data,
-                                                                previewFrame.cols,
-                                                                previewFrame.rows,
-                                                                previewFrame.step,
-                                                                QImage::Format_Grayscale16)));
-            spinImgPtr->Release();
-
-            if (!camera->isPreview)
+            if(!camera->isRecording)
             {
-                if (!camera->isRecording) camera->camPtr->EndAcquisition();
-                break;
+                spinImgPtr = camera->camPtr->GetNextImage(1000);
+                previewFrame = (cv::Mat(480, 640, CV_16UC1, spinImgPtr->GetData(), spinImgPtr->GetStride()) - camera->offset) * camera->gain;
+                //previewFrame -= camera->offset;
+                //previewFrame *= camera->gain;
+                ui->imageLabel->setPixmap(QPixmap::fromImage(QImage(previewFrame.data,
+                                                                    previewFrame.cols,
+                                                                    previewFrame.rows,
+                                                                    previewFrame.step,
+                                                                    QImage::Format_Grayscale16)));
+                spinImgPtr->Release();
             }
         }
         catch(Spinnaker::Exception& e)
         {
             std::cout << "error at preview loop: " << e.what() << "\n";
             emit PreviewEnded();
+            camera->camPtr->EndAcquisition();
             break;
         }
     }
+    if (!camera->isRecording) camera->camPtr->EndAcquisition();
 }
 
 void SleepMonitorMain::onPreviewStarted()
@@ -334,9 +355,9 @@ void SleepMonitorMain::onCameraDisconnected()
     camera->isRecording = false;
 
     ui->connectButton->setEnabled(true);
-    ui->connectButton->setText("Disconnected\nTry to connect again");
-    ui->connectButton->setFont(QFont("Arial", 10));
-    ui->connectButton->setStyleSheet("color: black");
+    ui->connectionStateLabel->setText("Disconnected\nTry to connect again");
+    //ui->connectionStateLabel->setFont(QFont("Arial", 10));
+    ui->connectionStateLabel->setStyleSheet("color: black");
 
     ui->startRecordingButton->setEnabled(false);
     ui->stopRecordingButton->setEnabled(false);
@@ -346,6 +367,7 @@ void SleepMonitorMain::onCameraDisconnected()
 
 void SleepMonitorMain::StatusCheck()
 {
+    int progress = 0;
     while (!isClosing)
     {
         if (camera->system->GetCameras().GetSize() == 0)
@@ -353,6 +375,16 @@ void SleepMonitorMain::StatusCheck()
             emit CameraDisconnected();
             break;
         }
+        if (camera->isRecording)
+        {
+            progress = (camera->currentFrameCount * 100) / camera->totalFrames;
+            emit UpdateProgressbar(progress);
+        }
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }
 
+void SleepMonitorMain::onUpdateProgressbar(int progress)
+{
+    ui->recordingProgressBar->setValue(progress);
+}

@@ -33,3 +33,12 @@ LIBS += C:\Spinnaker\lib64\vs2015\SpinVideo_v140.lib
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+DISTFILES += \
+    Assets/Icons/connectIcon.png \
+    Assets/Icons/pauseIcon.png \
+    Assets/Icons/playIcon.png \
+    Assets/Icons/previewIcon.png \
+    Assets/Icons/recordIcon.png \
+    Assets/Icons/stopIcon.png \
+    Assets/Icons/stopPreviewIcon.png
