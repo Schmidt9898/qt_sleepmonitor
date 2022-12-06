@@ -107,7 +107,7 @@ void SleepMonitorMain::on_startRecordingButton_clicked()
     ui->startRecordingButton->setEnabled(false);
     ui->stopRecordingButton->setEnabled(true);
 
-    recordingThread = std::thread(&SleepMonitorMain::startRecording, this);
+    recordingThread = std::thread(&SleepMonitorMain::StartRecording, this);
 }
 
 void SleepMonitorMain::on_stopRecordingButton_clicked()
@@ -115,14 +115,15 @@ void SleepMonitorMain::on_stopRecordingButton_clicked()
     camera->isRecording = false;
 }
 
-void SleepMonitorMain::startRecording()
+void SleepMonitorMain::StartRecording()
 {
     emit RecordingStarted();
 
     int recordSeconds = recordHour*60 + recordMinute; // recordHour*3600 + recordMinute * 60;
-    camera->StartRecording(recordSeconds, recordParts, ui->imageLabel);
+    int result = camera->StartRecording(recordSeconds, recordParts, ui->imageLabel);
 
     emit RecordingEnded();
+    if (result == -1) emit CameraDisconnected();
     return;
 }
 
@@ -232,22 +233,14 @@ void SleepMonitorMain::DisplayPreview()
     {
         if (!camera->camPtr->IsInitialized()) camera->camPtr->Init();
         if (!camera->camPtr->IsStreaming()) camera->camPtr->BeginAcquisition();
-    }
-    catch (Spinnaker::Exception& e)
-    {
-        std::cout << "Error at preview: " << e.what() << "\n";
-        return;
-    }
 
-    camera->isPreview = true;
-    Spinnaker::ImagePtr spinImgPtr;
-    Mat previewFrame;
+        camera->isPreview = true;
+        Spinnaker::ImagePtr spinImgPtr;
+        Mat previewFrame;
 
-    emit PreviewStarted();
+        emit PreviewStarted();
 
-    while (camera->isPreview)
-    {
-        try
+        while (camera->isPreview)
         {
             if(!camera->isRecording)
             {
@@ -263,15 +256,21 @@ void SleepMonitorMain::DisplayPreview()
                 spinImgPtr->Release();
             }
         }
-        catch(Spinnaker::Exception& e)
+        if (!camera->isRecording) camera->camPtr->EndAcquisition();
+    }
+    catch(Spinnaker::Exception& e)
+    {
+        std::cout << "error at preview loop: " << e.what() << " code: " << e.GetFullErrorMessage() << "\n";
+        emit PreviewEnded();
+        if (e.GetError() == -1002 || e.GetError() == -1010)
         {
-            std::cout << "error at preview loop: " << e.what() << "\n";
-            emit PreviewEnded();
+            emit CameraDisconnected();
+        }
+        else
+        {
             camera->camPtr->EndAcquisition();
-            break;
         }
     }
-    if (!camera->isRecording) camera->camPtr->EndAcquisition();
 }
 
 void SleepMonitorMain::onPreviewStarted()
@@ -368,13 +367,13 @@ void SleepMonitorMain::onCameraDisconnected()
 void SleepMonitorMain::StatusCheck()
 {
     int progress = 0;
-    while (!isClosing)
+    while (!isClosing && isConnected)
     {
-        if (camera->system->GetCameras().GetSize() == 0)
-        {
-            emit CameraDisconnected();
-            break;
-        }
+        //if (camera->system->GetCameras().GetSize() == 0)
+        //{
+        //    emit CameraDisconnected();
+        //    break;
+        //}
         if (camera->isRecording)
         {
             progress = (camera->currentFrameCount * 100) / camera->totalFrames;

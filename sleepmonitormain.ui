@@ -273,7 +273,7 @@
      <rect>
       <x>0</x>
       <y>540</y>
-      <width>690</width>
+      <width>688</width>
       <height>20</height>
      </rect>
     </property>
@@ -677,7 +677,7 @@
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">background-color: rgb(175, 175, 175);</string>
+     <string notr="true">background-color: rgb(204, 204, 204);</string>
     </property>
     <property name="frameShape">
      <enum>QFrame::NoFrame</enum>
@@ -700,6 +700,9 @@
        <pointsize>10</pointsize>
        <bold>true</bold>
       </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">color: rgb(0, 0, 0);</string>
      </property>
      <property name="text">
       <string>connect</string>
@@ -737,6 +740,9 @@
        <pointsize>11</pointsize>
        <bold>true</bold>
       </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">color: rgb(0, 0, 0);</string>
      </property>
      <property name="text">
       <string>Not Connected</string>

@@ -81,7 +81,7 @@ int CameraClass::InitCamera()
 
 }
 
-void CameraClass::StartRecording(int recordSeconds, int numParts, QLabel* previewFrame)
+int CameraClass::StartRecording(int recordSeconds, int numParts, QLabel* previewFrame)
 {
     std::cout << "Recording started\n";
 
@@ -206,14 +206,20 @@ void CameraClass::StartRecording(int recordSeconds, int numParts, QLabel* previe
 
         std::cout << "Recording ended\n";
         isRecording = false;
-        return;
+        return 0;
     }
     catch (Spinnaker::Exception& e)
     {
-        std::cout << "Error at recording: " << e.what() << "\n";
+        std::cout << "Error at recording: " << e.GetFullErrorMessage() << "\n";
         video.Close();
         isRecording = false;
+        if (e.GetError() == -1002)
+        {
+            std::cout << "\n\nError -1002 caught, which means the camera was disconnected\n\n";
+            return -1;
+        }
     }
+    return 1;
 }
 
 int CameraClass::ConfigureCamera(INodeMap& nodeMap)

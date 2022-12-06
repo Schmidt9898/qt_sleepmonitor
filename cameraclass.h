@@ -33,7 +33,7 @@ public:
 
     /* Functions */
     int ConfigureCamera(INodeMap& nodeMap);
-    void StartRecording(int recordLength, int numParts, QLabel *previewFrame);
+    int StartRecording(int recordLength, int numParts, QLabel *previewFrame);
     int InitCamera();
     int GetCamera();
     //void GetSingleImage();

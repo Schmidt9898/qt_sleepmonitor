@@ -24,7 +24,7 @@ public:
     /* Functions */
     void GUIGetCamera(int *result);
     void DisplayPreview();
-    void startRecording();
+    void StartRecording();
     void StatusCheck();
 
     void CameraTest();
