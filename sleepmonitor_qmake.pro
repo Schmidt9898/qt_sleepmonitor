@@ -42,3 +42,5 @@ DISTFILES += \
     Assets/Icons/recordIcon.png \
     Assets/Icons/stopIcon.png \
     Assets/Icons/stopPreviewIcon.png
+
+RC_ICONS = Assets/Icons/thermalIcon.ico

@@ -12,11 +12,11 @@ SleepMonitorMain::SleepMonitorMain(QWidget *parent, CameraClass *cam) : QMainWin
     //ui->recordingProgressBar->hide();
     ui->disconnectedLabel->hide();
 
-    QIcon recordIcon(QPixmap("../sleepmonitor_qmake/Assets/Icons/recordIcon.png"));
-    QIcon stopIcon(QPixmap("../sleepmonitor_qmake/Assets/Icons/stopIcon.png"));
-    QIcon previewIcon(QPixmap("../sleepmonitor_qmake/Assets/Icons/previewIcon.png"));
-    QIcon stopPreviewIcon(QPixmap("../sleepmonitor_qmake/Assets/Icons/stopPreviewIcon.png"));
-    QIcon connectIcon(QPixmap("../sleepmonitor_qmake/Assets/Icons/connectIcon.png"));
+    QIcon recordIcon(QPixmap("../Assets/Icons/recordIcon.png"));
+    QIcon stopIcon(QPixmap("../Assets/Icons/stopIcon.png"));
+    QIcon previewIcon(QPixmap("../Assets/Icons/previewIcon.png"));
+    QIcon stopPreviewIcon(QPixmap("../Assets/Icons/stopPreviewIcon.png"));
+    QIcon connectIcon(QPixmap("../Assets/Icons/connectIcon.png"));
 
     ui->startRecordingButton->setIcon(recordIcon);
     ui->stopRecordingButton->setIcon(stopIcon);

@@ -4,14 +4,14 @@
 #include <QApplication>
 #include <QWidget>
 
-#define DEBUG
+/*#define DEBUG
 #ifdef DEBUG
     #include <windows.h>
-#endif
+#endif*/
 
 int main(int argc, char *argv[])
 {
-    #ifdef DEBUG
+    /*#ifdef DEBUG
     // detach from the current console window
     // if launched from a console window, that will still run waiting for the new console (below) to close
     // it is useful to detach from Qt Creator's <Application output> panel
@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
     freopen("CON", "w", stdout);
     freopen("CON", "w", stderr);
     freopen("CON", "r", stdin);
-#endif
+#endif*/
     //###################################################################################//
 
     QApplication app(argc, argv);
